@@ -4,27 +4,27 @@ import './Scene.css';
 // 所有场景列表
 const ALL_SCENES = ['scene1', 'scene2', 'scene3', 'scene4', 'scene5', 'scene6', 'scene7', 'scene8', 'scene9'];
 
-// 根据播放时间获取应该显示的场景 - 《星晴》时间轴
+// 根据播放时间获取应该显示的场景 - 《成都》时间轴
 const getSceneForTime = (currentTime) => {
   // 时间单位：秒
-  // 0:00-0:22: scene1（前奏 - 望着天手牵手）
-  // 0:22-0:44: scene2（蓝天边游荡 - 云掉落面前）
-  // 0:44-1:05: scene3（云捏成你的形状）
-  // 1:05-1:28: scene4（载着阳光 - 都是晴天）
-  // 1:28-1:47: scene5（蝴蝶自在飞 - 花也布满天）
-  // 1:47-2:08: scene6（夕阳飞翔 - 环绕大自然）
-  // 2:08-2:43: scene7（迎着风 - 共度每一天）
-  // 2:43-3:24: scene8（看远方的星 - 许愿）
-  // 3:24-结尾: scene9（愿望实现 - 结尾）
+  // 0:00-0:32: scene1（让我掉下眼泪 - 昨夜的酒）
+  // 0:32-1:04: scene2（让我感到为难 - 挣扎的自由）
+  // 1:04-1:43: scene3（分别总是在九月 - 垂柳）
+  // 1:43-2:20: scene4（成都 带不走的 - 只有你）
+  // 2:20-2:52: scene5（和我在成都的街头走一走）
+  // 2:52-3:24: scene6（挽着衣袖 - 裤兜）
+  // 3:24-3:56: scene7（玉林路的尽头）
+  // 3:56-4:22: scene8（小酒馆的门口）
+  // 4:22-结尾: scene9（灯都熄灭了）
 
-  if (currentTime < 22) return 'scene1';
-  if (currentTime < 44) return 'scene2';
-  if (currentTime < 65) return 'scene3';
-  if (currentTime < 88) return 'scene4';
-  if (currentTime < 107) return 'scene5';
-  if (currentTime < 128) return 'scene6';
-  if (currentTime < 163) return 'scene7';
-  if (currentTime < 204) return 'scene8';
+  if (currentTime < 32) return 'scene1';
+  if (currentTime < 64) return 'scene2';
+  if (currentTime < 103) return 'scene3';
+  if (currentTime < 140) return 'scene4';
+  if (currentTime < 172) return 'scene5';
+  if (currentTime < 204) return 'scene6';
+  if (currentTime < 236) return 'scene7';
+  if (currentTime < 262) return 'scene8';
   return 'scene9';
 };
 
