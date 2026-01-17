@@ -193,8 +193,8 @@ const Player = () => {
         <div className="controls-content">
           {/* 歌曲信息 */}
           <div className="song-info">
-            <div className="song-title">星晴</div>
-            <div className="song-artist">周杰伦</div>
+            <div className="song-title">成都</div>
+            <div className="song-artist">赵雷</div>
           </div>
 
           {/* 播放按钮 */}
