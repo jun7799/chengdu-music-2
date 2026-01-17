@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { Howl } from 'howler';
 import { parseLRC, getCurrentLyricIndex } from '../utils/lrcParser';
 import Scene from './Scene';
 import Lyrics from './Lyrics';
@@ -12,7 +13,47 @@ const Player = () => {
   const [duration, setDuration] = useState(0);
   const [lrcLoaded, setLrcLoaded] = useState(false);
 
-  const audioRef = useRef(null);
+  const soundRef = useRef(null);
+  const progressInterval = useRef(null);
+
+  // 初始化 Howler
+  useEffect(() => {
+    const sound = new Howl({
+      src: ['/song.mp3'],
+      html5: false,
+      preload: true,
+      onload: () => {
+        const dur = sound.duration();
+        setDuration(dur);
+        console.log('[Howler] Audio loaded, duration:', dur);
+      },
+      onloaderror: (id, error) => {
+        console.error('[Howler] Load error:', error);
+      },
+      onplay: () => {
+        setIsPlaying(true);
+        startProgressTracking();
+      },
+      onpause: () => {
+        setIsPlaying(false);
+        stopProgressTracking();
+      },
+      onend: () => {
+        setIsPlaying(false);
+        stopProgressTracking();
+      },
+      onseek: () => {
+        console.log('[Howler] Seek completed');
+      }
+    });
+
+    soundRef.current = sound;
+
+    return () => {
+      stopProgressTracking();
+      sound.unload();
+    };
+  }, []);
 
   // 加载歌词文件
   useEffect(() => {
@@ -36,62 +77,105 @@ const Player = () => {
     }
   }, [currentTime, lyrics]);
 
-  // 音频时间更新
-  const handleTimeUpdate = () => {
-    if (audioRef.current) {
-      setCurrentTime(audioRef.current.currentTime);
-    }
+  // 开始追踪播放进度
+  const startProgressTracking = () => {
+    stopProgressTracking();
+    progressInterval.current = setInterval(() => {
+      if (soundRef.current) {
+        setCurrentTime(soundRef.current.seek());
+      }
+    }, 100);
   };
 
-  // 音频加载完成
-  const handleLoadedMetadata = () => {
-    if (audioRef.current) {
-      setDuration(audioRef.current.duration);
+  // 停止追踪播放进度
+  const stopProgressTracking = () => {
+    if (progressInterval.current) {
+      clearInterval(progressInterval.current);
+      progressInterval.current = null;
     }
   };
 
   // 播放/暂停切换
   const togglePlay = () => {
-    if (audioRef.current) {
-      if (isPlaying) {
-        audioRef.current.pause();
-      } else {
-        audioRef.current.play();
-      }
-      setIsPlaying(!isPlaying);
+    if (!soundRef.current) return;
+
+    if (isPlaying) {
+      soundRef.current.pause();
+    } else {
+      soundRef.current.play();
     }
   };
 
   // 格式化时间显示
   const formatTime = (seconds) => {
+    if (!isFinite(seconds) || seconds < 0) return '0:00';
     const mins = Math.floor(seconds / 60);
     const secs = Math.floor(seconds % 60);
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  // 进度条拖动
-  const handleSeek = (e) => {
-    const progressBar = e.currentTarget;
-    const rect = progressBar.getBoundingClientRect();
-    const percent = (e.clientX - rect.left) / rect.width;
-    if (audioRef.current) {
-      audioRef.current.currentTime = percent * duration;
-      setCurrentTime(percent * duration);
+  // 计算进度条位置并跳转
+  const seekToPosition = (clientX) => {
+    const container = document.querySelector('.progress-container');
+    if (!container || !soundRef.current) return;
+
+    const audioDuration = soundRef.current.duration();
+    console.log('[Seek] duration:', audioDuration);
+
+    if (!isFinite(audioDuration) || audioDuration <= 0) {
+      console.error('[Seek] Invalid duration');
+      return;
     }
+
+    const rect = container.getBoundingClientRect();
+    const percent = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+    const newTime = percent * audioDuration;
+
+    console.log('[Seek] percent:', percent.toFixed(3), 'seeking to:', newTime.toFixed(2) + 's');
+
+    soundRef.current.seek(newTime);
+    setCurrentTime(newTime);
+  };
+
+  // 点击跳转
+  const handleSeek = (e) => {
+    seekToPosition(e.clientX);
+  };
+
+  // 开始拖动
+  const handleSeekStart = (e) => {
+    e.preventDefault();
+    const startX = e.clientX;
+
+    // 立即跳到点击位置
+    seekToPosition(startX);
+
+    const handleMove = (moveEvent) => {
+      seekToPosition(moveEvent.clientX);
+    };
+
+    const handleEnd = () => {
+      document.removeEventListener('mousemove', handleMove);
+      document.removeEventListener('mouseup', handleEnd);
+    };
+
+    document.addEventListener('mousemove', handleMove);
+    document.addEventListener('mouseup', handleEnd);
   };
 
   // 计算进度百分比
-  const progressPercent = duration > 0 ? (currentTime / duration) * 100 : 0;
+  const progressPercent = useMemo(() => {
+    return (duration > 0 && isFinite(duration)) ? (currentTime / duration) * 100 : 0;
+  }, [currentTime, duration]);
 
   // 点击歌词跳转到对应时间
   const handleLyricClick = (time) => {
-    if (audioRef.current) {
-      audioRef.current.currentTime = time;
+    if (soundRef.current) {
+      soundRef.current.seek(time);
       setCurrentTime(time);
       // 如果当前是暂停状态，点击后自动播放
       if (!isPlaying) {
-        audioRef.current.play();
-        setIsPlaying(true);
+        soundRef.current.play();
       }
     }
   };
@@ -109,8 +193,8 @@ const Player = () => {
         <div className="controls-content">
           {/* 歌曲信息 */}
           <div className="song-info">
-            <div className="song-title">程艾影</div>
-            <div className="song-artist">赵雷</div>
+            <div className="song-title">星晴</div>
+            <div className="song-artist">周杰伦</div>
           </div>
 
           {/* 播放按钮 */}
@@ -135,7 +219,7 @@ const Player = () => {
         </div>
 
         {/* 进度条 */}
-        <div className="progress-container" onClick={handleSeek}>
+        <div className="progress-container" onClick={handleSeek} onMouseDown={handleSeekStart}>
           <div className="progress-bar-bg">
             <div
               className="progress-bar-fill"
@@ -146,15 +230,6 @@ const Player = () => {
           </div>
         </div>
       </div>
-
-      {/* 音频元素 */}
-      <audio
-        ref={audioRef}
-        src="/song.mp3"
-        onTimeUpdate={handleTimeUpdate}
-        onLoadedMetadata={handleLoadedMetadata}
-        onEnded={() => setIsPlaying(false)}
-      />
     </div>
   );
 };

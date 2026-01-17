@@ -1,48 +1,65 @@
-import React, { useMemo } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import './Scene.css';
 
-// 根据播放时间获取应该显示的场景
+// 所有场景列表
+const ALL_SCENES = ['scene1', 'scene2', 'scene3', 'scene4', 'scene5', 'scene6', 'scene7', 'scene8', 'scene9'];
+
+// 根据播放时间获取应该显示的场景 - 《星晴》时间轴
 const getSceneForTime = (currentTime) => {
   // 时间单位：秒
-  // 0:00-0:42: scene1（前奏）
-  // 0:42-1:00: scene2（出发）
-  // 1:00-1:16: scene3（甜蜜）
-  // 1:16-1:29: scene4（追逐）
-  // 1:29-1:51: scene5（间奏）
-  // 1:51-2:08: scene6（思乡）
-  // 2:08-2:24: scene7（梦境）
-  // 2:24-2:36: scene8（无奈）
-  // 2:36-2:57: scene8 继续显示
-  // 2:57-3:10: scene4（复用追逐）
-  // 3:10-3:14: scene4 结束
-  // 3:14-3:27: scene8（复用无奈）
-  // 3:27-4:11: scene8 继续显示
-  // 4:11-结尾: scene9（结尾）
+  // 0:00-0:22: scene1（前奏 - 望着天手牵手）
+  // 0:22-0:44: scene2（蓝天边游荡 - 云掉落面前）
+  // 0:44-1:05: scene3（云捏成你的形状）
+  // 1:05-1:28: scene4（载着阳光 - 都是晴天）
+  // 1:28-1:47: scene5（蝴蝶自在飞 - 花也布满天）
+  // 1:47-2:08: scene6（夕阳飞翔 - 环绕大自然）
+  // 2:08-2:43: scene7（迎着风 - 共度每一天）
+  // 2:43-3:24: scene8（看远方的星 - 许愿）
+  // 3:24-结尾: scene9（愿望实现 - 结尾）
 
-  if (currentTime < 42) return 'scene1';
-  if (currentTime < 60) return 'scene2';
-  if (currentTime < 76) return 'scene3';
-  if (currentTime < 89) return 'scene4';
-  if (currentTime < 111) return 'scene5';
+  if (currentTime < 22) return 'scene1';
+  if (currentTime < 44) return 'scene2';
+  if (currentTime < 65) return 'scene3';
+  if (currentTime < 88) return 'scene4';
+  if (currentTime < 107) return 'scene5';
   if (currentTime < 128) return 'scene6';
-  if (currentTime < 144) return 'scene7';
-  if (currentTime < 177) return 'scene8';  // 2:57
-  if (currentTime < 190) return 'scene4';  // 3:10，复用追逐
-  if (currentTime < 251) return 'scene8';  // 4:11，复用无奈
+  if (currentTime < 163) return 'scene7';
+  if (currentTime < 204) return 'scene8';
   return 'scene9';
 };
 
 const Scene = ({ currentTime = 0 }) => {
-  const currentScene = useMemo(() => getSceneForTime(currentTime), [currentTime]);
+  const [displayedScene, setDisplayedScene] = useState('scene1');
+  const preloadDone = useRef(false);
+
+  // 预加载所有图片（只执行一次）
+  useEffect(() => {
+    if (!preloadDone.current) {
+      preloadDone.current = true;
+      ALL_SCENES.forEach(scene => {
+        const img = new Image();
+        img.src = `/${scene}.jpg`;
+      });
+      console.log('[Scene] All images preloaded');
+    }
+  }, []);
+
+  // 只在场景真正变化时才更新DOM
+  useEffect(() => {
+    const newScene = getSceneForTime(currentTime);
+    if (newScene !== displayedScene) {
+      setDisplayedScene(newScene);
+    }
+  }, [currentTime, displayedScene]);
 
   return (
     <div className="scene-container">
       {/* 背景图片 */}
       <div
-        key={currentScene}
+        key={displayedScene}
         className="scene-image"
         style={{
-          backgroundImage: `url('/${currentScene}.jpg')`
+          backgroundImage: `url('/${displayedScene}.jpg')`
         }}
       />
       {/* 老电影效果层 */}
